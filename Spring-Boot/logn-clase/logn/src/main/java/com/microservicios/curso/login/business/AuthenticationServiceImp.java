@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.microservicios.curso.login.repository.CustomerRepository;
 import java.util.Objects;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import org.springframework.stereotype.Service;
 
 
@@ -25,16 +26,14 @@ public class AuthenticationServiceImp implements AuthenticationService
     private CustomerRepository customerRepository;
     
     BiPredicate<Customer, Credentials> customerValidation = (customer, credentials) -> Objects.isNull(customer) || !customer.getCustomerNumber().equals(credentials.getCustomerNumber()) || !customer.getPassword().equals(credentials.getPassword()); 
+    Predicate<Customer> customerStatusSessionValidation = customer -> !customer.isSessionAlive() && customer.getStatus().equals("A");
     
     @Override
     public boolean authenticate(Credentials credentials) throws Exception
     {
         Customer customer = customerRepository.findById(credentials.getCustomerNumber())
                 .orElse(null);
-        
-        if(customerValidation.test(customer, credentials))
-            return false;
-        
-        return true;
+
+        return !customerValidation.test(customer, credentials) && customerStatusSessionValidation.test(customer);
     }
 }
